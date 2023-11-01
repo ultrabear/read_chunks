@@ -2,5 +2,10 @@
 name = "read_chunks"
 version = "0.1.0"
 edition = "2021"
+categories = ["filesystem", "rust-patterns"]
+homepage = "https://github.com/ultrabear/read_chunks"
+repository = "https://github.com/ultrabear/read_chunks"
+readme = "README.md"
+description = "An extension to the Read trait allowing easier chunked reading"
+authors = ["Alexander Hall <bearodark@gmail.com>"]
 license = "MIT OR Apache-2.0"
-
