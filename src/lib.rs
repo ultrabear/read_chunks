@@ -98,7 +98,7 @@ fn try_read_exact<R: Read + ?Sized>(reader: &mut R, mut buf: &mut [u8]) -> io::R
 }
 
 impl<R: Read + ?Sized> ReadChunks<'_, R> {
-    /// Reads the next chunk of bytes from R with a size `n` specified by [`ReadExt::read_chunks`].
+    /// Reads the next chunk of bytes from `R` with a size `n` specified by [`ReadExt::read_chunks`].
     ///
     /// This method is meant to be called repeatedly until None is returned, at which EOF is
     /// assumed to have occurred (when [`Read::read`] returns Ok(0)).
@@ -107,7 +107,7 @@ impl<R: Read + ?Sized> ReadChunks<'_, R> {
     ///
     /// # Errors
     /// If this function encounters [`ErrorKind::Interrupted`] it will continue to attempt to fill the buffer
-    /// until a different error is encountered, the buffer is filled, or Read returns Ok(0).
+    /// until a different error is encountered, the buffer is filled, or `R` returns Ok(0).
     ///
     /// If a different read error occurs, this function will return the error, and the amount that
     /// was read into the internal buffer before the error is unspecified (another call to
