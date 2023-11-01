@@ -60,19 +60,25 @@ pub trait ReadExt: Read {
             buffer: vec![0; n].into_boxed_slice(),
         }
     }
+
+    /// (name subject to change) Tries to read the exact amount of bytes to fill up buf, but
+    /// instead of erroring at the end of the file, simply returns `Ok(size)`.
+    ///
+    /// It will continue to return Ok(0) on subsequent calls if EOF is reached (assuming the
+    /// backing reader does not start producing more data).
+    ///
+    /// # Errors
+    /// If this function encounters [`ErrorKind::Interrupted`] it will continue to attempt to fill the buffer
+    /// until a different error is encountered, the buffer is filled, or the reader returns Ok(0).
+    ///
+    /// If a different read error occurs, this function will return the error, and the contents of
+    /// buf is unspecified.
+    fn try_read_exact(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        try_read_exact(self, buf)
+    }
 }
 
 impl<T: Read + ?Sized> ReadExt for T {}
-
-/// A lending iterator that allows reading chunks of `n` bytes at a time from a reader.
-pub struct ReadChunks<'a, R: ?Sized + Read> {
-    /// The backing reader
-    reader: &'a mut R,
-    /// Internal buffer that is filled on each [`ReadChunks::next_chunk`] call.
-    /// It makes sense to use the `Cursor`/`buf` api if that becomes stable, as that can avoid
-    /// zeroing the buffer initially.
-    buffer: Box<[u8]>,
-}
 
 /// Tries to read to fill up the whole buffer, returning Ok(n) even if the function only managed to fill up n
 /// bytes which was not the length of buf (this implies an EOF was reached)
@@ -97,13 +103,21 @@ fn try_read_exact<R: Read + ?Sized>(reader: &mut R, mut buf: &mut [u8]) -> io::R
     Ok(read)
 }
 
+/// A lending iterator that allows reading chunks of `n` bytes at a time from a reader.
+pub struct ReadChunks<'a, R: ?Sized + Read> {
+    /// The backing reader
+    reader: &'a mut R,
+    /// Internal buffer that is filled on each [`ReadChunks::next_chunk`] call.
+    /// It makes sense to use the `Cursor`/`buf` api if that becomes stable, as that can avoid
+    /// zeroing the buffer initially.
+    buffer: Box<[u8]>,
+}
+
 impl<R: Read + ?Sized> ReadChunks<'_, R> {
     /// Reads the next chunk of bytes from `R` with a size `n` specified by [`ReadExt::read_chunks`].
     ///
     /// This method is meant to be called repeatedly until None is returned, at which EOF is
     /// assumed to have occurred (when [`Read::read`] returns Ok(0)).
-    ///
-    ///
     ///
     /// # Errors
     /// If this function encounters [`ErrorKind::Interrupted`] it will continue to attempt to fill the buffer
@@ -131,7 +145,7 @@ impl<R: Read + ?Sized> ReadChunks<'_, R> {
     /// }
     ///
     /// // The slice implementation of `Read` will empty the slice.
-    /// // It is notable that read_chunks did not take ownership of 
+    /// // It is notable that read_chunks did not take ownership of
     /// // slice however, only an exclusive borrow.
     /// assert!(slice.is_empty());
     /// ```
