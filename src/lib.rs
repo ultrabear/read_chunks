@@ -53,6 +53,8 @@ pub trait ReadExt: Read {
     /// Returns a lending iterator that yields chunks of size `n` until the end of the reader.
     ///
     /// This method will allocate n bytes *once*.
+    ///
+    /// (This is **NOT** a stdlib candidate.)
     fn read_chunks(&mut self, n: usize) -> ReadChunks<'_, Self> {
         ReadChunks {
             reader: self,
@@ -61,11 +63,9 @@ pub trait ReadExt: Read {
         }
     }
 
-    /// (name subject to change) Tries to read the exact amount of bytes to fill up buf, but
-    /// instead of erroring at the end of the file, simply returns `Ok(size)`.
-    ///
-    /// It will continue to return Ok(0) on subsequent calls if EOF is reached (assuming the
-    /// backing reader does not start producing more data).
+    /// Attempts to "keep reading" to fill up buf, by ignoring [`ErrorKind::Interrupted`] errors, and
+    /// continuously reading from the backing reader until `Ok(0)` or a different error is
+    /// encountered.
     ///
     /// # Errors
     /// If this function encounters [`ErrorKind::Interrupted`] it will continue to attempt to fill the buffer
@@ -73,7 +73,7 @@ pub trait ReadExt: Read {
     ///
     /// If a different read error occurs, this function will return the error, and the contents of
     /// buf is unspecified.
-    fn try_read_exact(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+    fn keep_reading(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         try_read_exact(self, buf)
     }
 }
